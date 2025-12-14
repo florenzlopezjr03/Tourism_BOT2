@@ -30,3 +30,7 @@ build/
 # Project specific
 conversation_logs/
 .cache/
+
+# Streamlit secrets (never commit)
+.streamlit/secrets.toml
+

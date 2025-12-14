@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from mistralai import Mistral
 
-# Load environment variables
+# Load environment variables from .env (for local development)
 load_dotenv()
 
 # Page configuration
@@ -33,14 +33,35 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Initialize Mistral client
+# Get API key from environment or Streamlit secrets
 API_KEY = os.getenv("MISTRAL_API_KEY")
+if not API_KEY:
+    try:
+        API_KEY = st.secrets.get("MISTRAL_API_KEY")
+    except Exception:
+        pass
 
 if not API_KEY:
-    st.error("❌ MISTRAL_API_KEY not found in environment variables. Please add it to the .env file.")
+    st.error("""
+    ❌ **API Key Not Found**
+    
+    To use this bot, you need to add your Mistral API key:
+    
+    **Local Development:**
+    1. Create a `.env` file in the project root
+    2. Add: `MISTRAL_API_KEY=your_api_key_here`
+    
+    **Streamlit Cloud Deployment:**
+    1. Go to your app settings
+    2. Add a secret: `MISTRAL_API_KEY=your_api_key_here`
+    """)
     st.stop()
 
-client = Mistral(api_key=API_KEY)
+try:
+    client = Mistral(api_key=API_KEY)
+except Exception as e:
+    st.error(f"❌ Failed to initialize Mistral client: {str(e)}")
+    st.stop()
 
 # System prompt for tourism bot
 SYSTEM_PROMPT = """You are a helpful and knowledgeable tourism assistant powered by Mistral AI. 
@@ -141,7 +162,8 @@ if user_input:
             except Exception as e:
                 error_msg = f"❌ Error: {str(e)}"
                 st.error(error_msg)
-                st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                # Remove the user message if API call failed
+                st.session_state.messages.pop()
 
 # Footer
 st.markdown("---")
